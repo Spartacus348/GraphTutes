@@ -1,14 +1,18 @@
 
-struct Ray<P,T: Ord+Copy>{
+pub(crate) struct Ray<P,T: Ord+Copy>{
     point:P,
     edge: T
 }
 
-pub(crate) trait IsGraph<P, T: Ord+Copy>{
-    fn add_bidirectional_edge(&mut self: Self, i:P, j:P, val: T);
-    fn add_directional_edge(&mut self: Self, from:P, to:P, val:T);
+impl<P,T: Ord+Copy> Ray<P,T>{
+    pub fn new(point:P, edge:T) -> Self{Self{point,edge}}
+}
 
-    fn new() -> Self;
+pub(crate) trait IsGraph<P:Copy+Eq, T: Ord+Copy>{
+    fn add_bidirectional_edge(&mut self, i:P, j:P, val: T);
+    fn add_directional_edge(&mut self, from:P, to:P, val:T);
+
+    fn new(nodes: Box<dyn Iterator<Item=P>>) -> Self;
     fn is_cyclical(&self) -> bool;
 
     fn check_directional(&mut self);
@@ -19,4 +23,6 @@ pub(crate) trait IsGraph<P, T: Ord+Copy>{
 
     fn remove_bidirectional_edge(&mut self, i:P, j:P);
     fn remove_directional_edge(&mut self, from:P, to:P);
+    
+    fn add_node(&mut self, node:P);
 }
