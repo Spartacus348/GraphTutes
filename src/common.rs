@@ -1,7 +1,7 @@
 
 pub(crate) struct Ray<P,T: Ord+Copy>{
-    point:P,
-    edge: T
+    pub(crate) point:P,
+    pub(crate) edge: T
 }
 
 impl<P,T: Ord+Copy> Ray<P,T>{
@@ -25,4 +25,7 @@ pub(crate) trait IsGraph<P:Copy+Eq, T: Ord+Copy>{
     fn remove_directional_edge(&mut self, from:P, to:P);
     
     fn add_node(&mut self, node:P);
+
+    fn get_nodes(&self) -> Vec<P>;
 }
+

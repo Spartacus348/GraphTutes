@@ -85,5 +85,9 @@ impl<N: Copy+Eq+Hash, E: Ord+Copy> IsGraph<N, E> for AdjacencyMap<N, E> {
     fn add_node(&mut self, n: N) {
         self.graph.insert(n, HashMap::new());
     }
+
+    fn get_nodes(&self) -> Vec<N> {
+        self.graph.keys().cloned().collect()
+    }
 }
 
