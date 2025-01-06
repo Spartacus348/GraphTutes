@@ -4,3 +4,9 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+eframe = "0.30.0"
+env_logger = "0.11.6"
+egui = "0.30.0"
+rfd = "0.15.2"
+bitvec = "1.0.1"
+rayon = "1.10.0"
