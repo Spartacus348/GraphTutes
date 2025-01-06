@@ -1,53 +1,69 @@
-use std::ops::Index;
-use std::vec::IntoIter;
 // a function for turning a 1-d sequence of data into a 2d representation where adjacency is preserved, a la map-of-the-internet
-use either::Either;
 
-const N_CELL: usize = 3;
+// hypothetical process:
+// - expand list to nearest larger even power of 2, N^2
+// - create empty NxN matrix
+// - for each index:
+//   - x=y=0
+//   - break value into 2-bit pairs
+//   - set adjustment scale to 0
+//   - for each pair, going from least significant to most :
+//     - x += pair.0*2^scale
+//     - y += pair.1*2^scale
+//     - scale++
+//   - matrix[x,y] = list[index]
 
-type HilbertBranch<'a, T> = Either<T, &'a HilbertCurve<'a, T>>;
+use bitvec::vec::BitVec;
+use rayon::prelude::*;
 
-struct HilbertCurve<'a, T: 'a> {
-    content: [HilbertBranch<'a, T>; N_CELL],
-    index: isize,
+fn to_space_filled<T, I: ExactSizeIterator<Item = T>>(iter: I) -> Vec<Vec<T>> {
+    let n_side = get_size_of_square(&iter);
+
+    let mut pic = Vec::<Vec<T>>::from_iter((0..n_side).map(|_| Vec::<T>::with_capacity(n_side)));
+
+    iter.enumerate().for_each(|(index, item)| {
+        let pos: BitVec<usize> = BitVec::from_element(index);
+
+        // this segment looks like hell, so let me explain
+        // each bit is paired with its position in the number
+        // then collected into another iterator and iterated through in chunks of 2
+        // that is passed into a parallel iterator. If the bit is 1, 2^f(significance), else 0
+        // then sum all the even and odd bits to get the x,y positions
+        let (x, y) = pos
+            .into_iter()
+            .enumerate()
+            .collect::<Vec<(usize, bool)>>()
+            .chunks(2)
+            .par_bridge()
+            .map(|chunk| {
+                let (scale_x, bit_x) = chunk[0];
+                let (scale_y, bit_y) = chunk[1];
+                (
+                    if bit_x {
+                        2usize.pow((scale_x / 2) as u32)
+                    } else {
+                        0usize
+                    },
+                    if bit_y {
+                        2usize.pow(((scale_y - 1) / 2) as u32)
+                    } else {
+                        0usize
+                    },
+                )
+            })
+            .reduce(|| (0, 0), |a, b| (a.0 + b.0, a.1 + b.1));
+        pic[x][y] = item;
+    });
+
+    pic
 }
-impl<'a, T:'a> Index<usize> for HilbertCurve<'a, T> {
-    type Output = HilbertBranch<'a, T>;
-    fn index(&self, i: usize) -> &Self::Output {
-        &self.content[i]
+
+fn get_size_of_square<T, I: ExactSizeIterator<Item=T>>(iter: &I) -> usize {
+    let mut n_size_log2 = iter.len().next_power_of_two().ilog2();
+    if n_size_log2 % 2 == 1 {
+        n_size_log2 += 1;
     }
+
+    let n_side: usize = 2usize.pow(n_size_log2 / 2);
+    n_side
 }
-
-struct HilbertIter<'a, T: 'a> {
-    parent: &'a HilbertCurve<'a, T>,
-    index: isize,
-    diving_iter: Option<&'a HilbertIter<'a, T>>,
-}
-
-impl<'a, T: 'a> HilbertIter<'a, T> {
-    fn new(parent: &'a HilbertCurve<T>) -> Self {
-        Self{
-            parent,
-            index: 0,
-            diving_iter: None,
-        }
-    }
-}
-
-impl<'a, T: 'a> Iterator for HilbertIter<'a, T>{
-    type Item = &'a T;
-    fn next(&mut self) -> Option<Self::Item> {
-        if self.index > (N_CELL - 1) as isize {
-            return None
-        }
-
-        if self.diving_iter.is_none() {
-            self.index += 1;
-            let branch = self.parent.content.get(self.index as usize);
-            
-            
-        }
-    }
-}
-
-
